@@ -4,7 +4,6 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -20,58 +19,20 @@ import {
 } from "@/components/ui/select";
 
 import { useParams } from "react-router-dom";
-import { fetchGenre } from "@/api";
-
-const fetchData = async (listId) => {
-  const response = await fetch(
-    `https://phimapi.com/v1/api/danh-sach/${listId}?limit=${60}`
-  );
-  const data = await response.json();
-  return data;
-};
+import useFetch from "@/hooks/useFetch";
 
 const ListDetailPage = () => {
   const { listId } = useParams();
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState();
+  const [totalPages, setTotalPages] = useState();
+  const [currentPage, setCurrentPage] = useState(0);
+  const [listCurrentPage, setListCurrentPage] = useState([0, 1, 2, 3, 4, 5]);
   const [title, setTitle] = useState("");
-  const [pageIndex, setPageIndex] = useState(0);
   const [filtered, setFiltered] = useState({
     genre: "",
     country: "",
     year: "",
   });
-  const [filteredItems, setFilteredItems] = useState([]);
-
-  useEffect(() => {
-    const getData = async () => {
-      const data = await fetchData(listId);
-      setTitle(data.data.titlePage);
-      setItems(data.data.items);
-      setFilteredItems(data.items);
-    };
-    getData();
-    setPageIndex(0);
-  }, [listId]);
-
-  useEffect(() => {
-    if (!items.length) return;
-
-    if (Object.values(filtered).every((value) => !value)) {
-      setFilteredItems(items);
-    } else {
-      const filteredList = items.filter(
-        (item) =>
-          (!filtered.genre ||
-            item.category?.some((g) => g.slug === filtered.genre)) &&
-          (!filtered.country ||
-            item.country?.some((c) => c.slug === filtered.country)) &&
-          (!filtered.year || item.year?.toString() === filtered.year)
-      );
-
-      setFilteredItems(filteredList);
-    }
-  }, [filtered, items]);
-
   const handleFilterChange = (type, value) => {
     setFiltered((prev) => ({
       ...prev,
@@ -79,33 +40,55 @@ const ListDetailPage = () => {
     }));
   };
 
-  let content;
+  const { data } = useFetch(
+    `https://phimapi.com/v1/api/danh-sach/${listId}?page=${currentPage + 1}&category=${filtered.genre}&country=${filtered.country}&year=${filtered.year}&limit=${24}`
+  );
 
-  if (!items) {
-    content = <p className="text-slate-100">Loading...</p>;
-  }
-  
-  const totalPage = Math.ceil(filteredItems?.length/12)
-  if(pageIndex >= totalPage) {
-   () => setPageIndex(totalPage)
-  }
-  if (filteredItems) {
-    let startIndex;
-    let endIndex;
-    if (!pageIndex) {
-      startIndex = 1;
-      endIndex = 12;
+  useEffect(() => {
+    if (data?.status === "success") {
+      setItems(data.data.items);
+      setTitle(data.data.titlePage);
+      setTotalPages(data.data.params.pagination.totalPages);
     }
-    startIndex = pageIndex * 12;
-    endIndex = startIndex + 12;
-    content = filteredItems.slice(startIndex, endIndex).map((item) => (
-      <div className="w-full md:w-[22vw]" key={item._id}>
-        <Card slug={item.slug} />
-      </div>
-    ));
+  }, [data]);
 
+  useEffect(() => {}, [listId]);
+
+  const paginationHandler = (element) => {
+    const safePage = Math.max(0, Math.min(element, totalPages - 1));
+    setCurrentPage(safePage);
+    let pageList;
+    if (totalPages <= 5) {
+      pageList = Array.from({ length: totalPages }, (_, i) => i);
+    } else if (safePage < 3) {
+      pageList = [0, 1, 2, 3, 4];
+    } else if (safePage >= totalPages - 3) {
+      pageList = [
+        totalPages - 5,
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+      ];
+    } else {
+      pageList = [
+        safePage - 2,
+        safePage - 1,
+        safePage,
+        safePage + 1,
+        safePage + 2,
+      ];
+    }
+    setListCurrentPage(pageList);
+  };
+
+  const PaginationPreviousHandler = () => {
+    paginationHandler(currentPage - 1)
   }
 
+  const PaginationNextHandler = () => {
+    paginationHandler(currentPage + 1)
+  }
 
   
 
@@ -423,105 +406,33 @@ const ListDetailPage = () => {
           </Select>
         </div>
       </div>
-      <div className="flex flex-wrap gap-3">{content}</div>
+      <div className="flex flex-wrap gap-3 md:grid grid-cols-4 grid-rows-6 ">
+        {items?.map((item) => (
+          <Card key={item._id} data={item} />
+        ))}
+      </div>
       <div className="mt-4 md:pt-8">
         <Pagination>
           <PaginationContent>
-            {pageIndex > 0 && (
-              <PaginationItem
-                className={`${
-                  filteredItems?.length / 12 >= 2 ? "inline-block" : "hidden"
-                } hover:cursor-pointer ease-in duration-150 bg-slate-800 rounded -p-2 text-slate-100`}
-              >
-                <PaginationPrevious
-                  onClick={() => {
-                    setPageIndex(pageIndex - 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
-            {filteredItems?.length  > 0  && (
-              <PaginationItem
-                className={`${
-                  pageIndex === 0
-                    ? "text-slate-800 bg-slate-100"
-                    : "text-slate-100 bg-slate-800"
-                } 
-                font-medium hover:cursor-pointer ease-in duration-150 rounded -p-2 `}
-              >
-                <PaginationLink
-                  onClick={() => {
-                    setPageIndex(0);
-                  }}
+            <PaginationItem>
+              <PaginationPrevious className="py-2 px-4 bg-orange-600 text-white font-medium rounded hover:cursor-pointer" onClick={PaginationPreviousHandler}/>
+            </PaginationItem>
+            {listCurrentPage.map((element) => {
+              return (
+                <PaginationItem
+                  key={element}
+                  className="py-2 px-4 bg-orange-600 text-white font-medium rounded hover:cursor-pointer"
+                  onClick={() => paginationHandler(element)}
                 >
-                  1
-                </PaginationLink>
-              </PaginationItem>
-            )}
-            {filteredItems?.length > 12 && (
-              <PaginationItem
-                className={`${
-                  pageIndex === 1
-                    ? "text-slate-800 bg-slate-100"
-                    : "text-slate-100 bg-slate-800"
-                } font-medium hover:cursor-pointer ease-in duration-150 rounded -p-2 `}
-              >
-                <PaginationLink
-                  onClick={() => {
-                    setPageIndex(1);
-                  }}
-                >
-                  2
-                </PaginationLink>
-              </PaginationItem>
-            )}
-            {filteredItems?.length > 24 && (
-              <PaginationItem
-                className={`${
-                  pageIndex === 2
-                    ? "text-slate-800 bg-slate-100"
-                    : "text-slate-100 bg-slate-800"
-                } font-medium hover:cursor-pointer ease-in duration-150 rounded -p-2 `}
-              >
-                <PaginationLink
-                  onClick={() => {
-                    setPageIndex(2);
-                  }}
-                >
-                  3
-                </PaginationLink>
-              </PaginationItem>
-            )}
-            {filteredItems?.length > 36 && (
-              <PaginationItem
-                className={`${
-                  pageIndex === 3
-                    ? "text-slate-800 bg-slate-100"
-                    : "text-slate-100 bg-slate-800"
-                } font-medium hover:cursor-pointer ease-in duration-150 rounded -p-2 `}
-              >
-                <PaginationLink
-                  onClick={() => {
-                    setPageIndex(3);
-                  }}
-                >
-                  4
-                </PaginationLink>
-              </PaginationItem>
-            )}
-            {(pageIndex < totalPage) && (
-              <PaginationItem
-                className={`${
-                  filteredItems?.length / 12 >= 2 ? "inline-block" : "hidden"
-                } hover:cursor-pointer ease-in duration-150 bg-slate-800 rounded -p-2 text-slate-100`}
-              >
-                <PaginationNext
-                  onClick={() => {
-                    setPageIndex(pageIndex + 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
+                  <button className="bg-orange-600 text-white font-medium rounded hover:cursor-pointer">
+                    {element + 1}
+                  </button>
+                </PaginationItem>
+              );
+            })}
+            <PaginationItem>
+              <PaginationNext className="py-2 px-4 bg-orange-600 text-white font-medium rounded hover:cursor-pointer" onClick={PaginationNextHandler}/>
+            </PaginationItem>
           </PaginationContent>
         </Pagination>
       </div>

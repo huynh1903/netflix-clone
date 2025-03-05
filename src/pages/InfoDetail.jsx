@@ -1,74 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import Card from "@/components/Card";
-import { fetchNewMovies } from "@/api";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { LazyLoadImage } from "react-lazy-load-image-component";
+import CarouselMovies from "@/components/Carousel";
+import useFetch from "@/hooks/useFetch";
 
-const NewMovies = () => {
-  const fetchData = async () => {
-    const data = await fetchNewMovies(12);
-    return data;
-  };
-
-  const { data, isPending, error } = useQuery({
-    queryKey: ["new" ],
-    queryFn: fetchData,
-  });
-
-  if (isPending) return "Loading...";
-
-  if (error) return "An error has occurred: " + error.message;
-
-  return (
-    <section className="py-4 pb-8">
-      <Carousel
-        opts={{
-          align: "start",
-          loop: true,
-        }}
-        plugins={[
-          Autoplay({
-            delay: 5000,
-          }),
-        ]}
-      >
-        <CarouselContent>
-          {data.items.map((movie) => (
-            <CarouselItem className="md:basis-1/4" key={movie.slug}>
-              <Card slug={movie.slug} />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-    </section>
-  );
-};
 
 const InfoDetailPage = () => {
   const { infoId } = useParams();
 
-  const fetchData = async () => {
-    const response = await fetch(`https://phimapi.com/phim/${infoId}`);
-    const data = await response.json();
-    return data;
-  };
-
-  const { data, isPending, error, } = useQuery({
-    queryKey: ["detail", infoId],
-    queryFn: fetchData,
-  });
+  const {data, isPending, error} = useFetch(`https://phimapi.com/phim/${infoId}`)
 
   if (isPending) return "Loading...";
 
@@ -98,12 +39,6 @@ const InfoDetailPage = () => {
                   <Button className="bg-gradient-to-r from-indigo-500 to-pink-500 hover:cursor-pointer ease-in duration-150">Trailer</Button>
                 </DialogTrigger>
                 <DialogContent className="w-[370px] md:w-[560px] md:h-[370px]">
-                  {/* <DialogHeader>
-                  <DialogTitle>Trailer</DialogTitle>
-                  <DialogDescription>
-                    Anyone who has this link will be able to view this.
-                  </DialogDescription>
-                </DialogHeader> */}
                   <div className="flex items-center">
                     <div className="grid flex-1 gap-2">
                       <iframe
@@ -116,13 +51,6 @@ const InfoDetailPage = () => {
                       ></iframe>
                     </div>
                   </div>
-                  {/* <DialogFooter className="sm:justify-start">
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">
-                      Close
-                    </Button>
-                  </DialogClose>
-                </DialogFooter> */}
                 </DialogContent>
               </Dialog>
             )}
@@ -198,7 +126,7 @@ const InfoDetailPage = () => {
           Có thể bạn sẽ thích
         </h3>
         <div>
-          <NewMovies />
+          <CarouselMovies />
         </div>
       </div>
     </div>

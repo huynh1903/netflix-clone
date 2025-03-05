@@ -1,91 +1,14 @@
-import {
-  fetchCartoon,
-  fetchFeature,
-  fetchNewMovies,
-  fetchSeries,
-  fetchTvShows,
-} from "@/api";
 import Card from "@/components/Card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-
-//phim mới cập nhật
-const NewMovies = () => {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    // Prefetch dữ liệu trước khi render component
-    queryClient.prefetchQuery({
-      queryKey: ["new"],
-      queryFn: () => fetchNewMovies(12),
-    });
-  }, [queryClient]);
-
-  const { data, isPending, error } = useQuery({
-    queryKey: ["new"],
-    queryFn: () => fetchNewMovies(12),
-  });
-
-  if (isPending) return null; // Không hiển thị gì khi đang load
-
-  if (error) return <p className="text-red-500">Lỗi: {error.message}</p>;
-
-  return (
-    <section className="py-4">
-      <h1 className="py-3 text-2xl text-orange-500 uppercase font-medium">
-        Phim mới cập nhật
-      </h1>
-      <Carousel
-        opts={{
-          align: "start",
-          loop: true,
-        }}
-        plugins={[
-          Autoplay({
-            delay: 5000,
-          }),
-        ]}
-      >
-        <CarouselContent>
-          {data.items.map((movie) => (
-            <CarouselItem className="md:basis-1/4" key={movie.slug}>
-              <Card slug={movie.slug} />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-    </section>
-  );
-};
+import CarouselMovies from "@/components/Carousel";
+import useFetch from "@/hooks/useFetch";
 
 
 
 
 const FeatureMovies = () => {
-  const fetchData = async () => {
-    const data = await fetchFeature(12);
-    return data;
-  };
-
-  
-  const { data, isPending, error } = useQuery({
-    queryKey: ["feature"],
-    queryFn: fetchData,
-  });
+  const {data, isPending, error} = useFetch(`https://phimapi.com/v1/api/danh-sach/phim-le?limit=${12}`)
 
   if (isPending) return;
 
@@ -104,25 +27,20 @@ const FeatureMovies = () => {
         </div>
       </div>
       <div className="py-3 flex flex-col md:grid grid-cols-5 grid-rows-3 gap-4">
-        {data.data.items.map((movie) => (
+        {data.data.items.map((movie) => 
+        (
           <div key={movie._id} className="first:row-span-2 first:col-span-2">
-            <Card slug={movie.slug} />
+            <Card data={movie} />
           </div>
-        ))}
+        )
+        )}
       </div>
     </section>
   );
 };
 
 const SeriesMovies = () => {
-  const fetchData = async () => {
-    const data = await fetchSeries(12);
-    return data;
-  };
-  const { data, isPending, error } = useQuery({
-    queryKey: ["series"],
-    queryFn: fetchData,
-  });
+  const {data, isPending, error} = useFetch(`https://phimapi.com/v1/api/danh-sach/phim-bo?limit=${12}`)
 
   if (isPending) return;
 
@@ -143,7 +61,7 @@ const SeriesMovies = () => {
       <div className="py-3 flex flex-col md:grid grid-cols-5 grid-rows-3 gap-4">
         {data.data.items.map((movie) => (
           <div key={movie._id} className="first:row-span-2 first:col-span-2">
-            <Card slug={movie.slug} />
+            <Card data={movie}/>
           </div>
         ))}
       </div>
@@ -152,15 +70,7 @@ const SeriesMovies = () => {
 };
 
 const TVShows = () => {
-  const fetchData = async () => {
-    const data = await fetchTvShows(12);
-    return data;
-  };
-  const { data, isPending, error } = useQuery({
-    queryKey: ["tv-shows"],
-    queryFn: fetchData,
-  });
-
+  const {data, isPending, error} = useFetch(`https://phimapi.com/v1/api/danh-sach/tv-shows?limit=${12}`)
   if (isPending) return;
 
   if (error) return "An error has occurred: " + error.message;
@@ -180,7 +90,7 @@ const TVShows = () => {
       <div className="py-3 flex flex-col md:grid grid-cols-5 grid-rows-3 gap-4">
         {data.data.items.map((movie) => (
           <div key={movie._id} className="first:row-span-2 first:col-span-2">
-            <Card slug={movie.slug} />
+            <Card data={movie}/>
           </div>
         ))}
       </div>
@@ -189,14 +99,7 @@ const TVShows = () => {
 };
 
 const CartoonMovies = () => {
-  const fetchData = async () => {
-    const data = await fetchCartoon(12);
-    return data;
-  };
-  const { data, isPending, error } = useQuery({
-    queryKey: ["cartoon"],
-    queryFn: fetchData,
-  });
+  const {data, isPending, error} = useFetch(`https://phimapi.com/v1/api/danh-sach/hoat-hinh?limit=${12}`)
 
   if (isPending) return;
 
@@ -217,7 +120,7 @@ const CartoonMovies = () => {
       <div className="py-3 flex flex-col md:grid grid-cols-5 grid-rows-3 gap-4">
         {data.data.items.map((movie) => (
           <div key={movie._id} className="first:row-span-2 first:col-span-2">
-            <Card slug={movie.slug} />
+            <Card data={movie}/>
           </div>
         ))}
       </div>
@@ -228,7 +131,7 @@ const CartoonMovies = () => {
 const HomePage = () => {
   return (
     <>
-      <NewMovies />
+      <CarouselMovies />
       <FeatureMovies />
       <SeriesMovies />
       <TVShows />

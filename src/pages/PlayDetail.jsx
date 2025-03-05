@@ -1,17 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import Hls from "hls.js";
 import { useEffect, useRef, useState } from "react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { fetchNewMovies } from "@/api";
-import Card from "@/components/Card";
-import Autoplay from "embla-carousel-autoplay";
+import CarouselMovies from "@/components/Carousel";
+import useFetch from "@/hooks/useFetch";
+
 
 const HLSPlayer = ({ src, width = "100%", height = "100%" }) => {
   const videoRef = useRef(null);
@@ -49,69 +41,17 @@ const HLSPlayer = ({ src, width = "100%", height = "100%" }) => {
   return <video ref={videoRef} controls style={{ width, height }}></video>;
 };
 
-const NewMovies = () => {
-  const fetchData = async () => {
-    const data = await fetchNewMovies(12);
-    return data;
-  };
 
-  const { data, isPending, error } = useQuery({
-    queryKey: ["new"],
-    queryFn: fetchData,
-  });
-
-  if (isPending) return "Loading...";
-
-  if (error) return "An error has occurred: " + error.message;
-
-  return (
-    <section className="py-4 pb-8">
-      <Carousel
-        opts={{
-          align: "start",
-          loop: true,
-        }}
-        plugins={[
-          Autoplay({
-            delay: 5000,
-          }),
-        ]}
-      >
-        <CarouselContent>
-          {data.items.map((movie) => (
-            <CarouselItem className="md:basis-1/4" key={movie.slug}>
-              <Card slug={movie.slug} />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-    </section>
-  );
-};
 
 const PlayDetailPage = () => {
   const { playId } = useParams();
   const [episode, setEpisode] = useState(0);
 
-  const fetchData = async () => {
-    const response = await fetch(`https://phimapi.com/phim/${playId}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch data");
-    }
-    const data = await response.json();
-    return data;
-  };
+  const{data, isPending, error} = useFetch(`https://phimapi.com/phim/${playId}`)
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["play", playId],
-    queryFn: fetchData,
-  });
+  if (isPending) return "Loading...";
 
-  if (isLoading) return "Loading...";
-
-  if (isError) return `An error has occurred: ${error.message}`;
+  if (error) return `An error has occurred: ${error.message}`;
 
   const videoSrc = data.episodes[0]?.server_data[episode]?.link_m3u8;
 
@@ -119,7 +59,7 @@ const PlayDetailPage = () => {
     <div>
       <div className="flex justify-center">
         {videoSrc ? (
-          <HLSPlayer src={videoSrc} width="90vw" height="auto" />
+          <HLSPlayer src={videoSrc} width="90vw" height="90vh" />
         ) : (
           <p>No video available</p>
         )}
@@ -145,7 +85,7 @@ const PlayDetailPage = () => {
       </div>
       <div className="pt-6">
         <h3 className="text-xl text-orange-600 font-medium uppercase">Có thể bạn muốn xem</h3>
-        <NewMovies />
+        <CarouselMovies />
       </div>
     </div>
   );
