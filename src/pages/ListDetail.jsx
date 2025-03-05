@@ -38,10 +38,15 @@ const ListDetailPage = () => {
       ...prev,
       [type]: value,
     }));
+    paginationHandler(0);
   };
 
   const { data } = useFetch(
-    `https://phimapi.com/v1/api/danh-sach/${listId}?page=${currentPage + 1}&category=${filtered.genre}&country=${filtered.country}&year=${filtered.year}&limit=${24}`
+    `https://phimapi.com/v1/api/danh-sach/${listId}?page=${
+      currentPage + 1
+    }&category=${filtered.genre}&country=${filtered.country}&year=${
+      filtered.year
+    }&limit=${24}`
   );
 
   useEffect(() => {
@@ -51,8 +56,15 @@ const ListDetailPage = () => {
       setTotalPages(data.data.params.pagination.totalPages);
     }
   }, [data]);
-
-  useEffect(() => {}, [listId]);
+  useEffect(() => {
+    setFiltered({
+      genre: "",
+      country: "",
+      year: "",
+    });
+    setCurrentPage(0);
+    setListCurrentPage([0, 1, 2, 3, 4, 5]);
+  }, [listId]);
 
   const paginationHandler = (element) => {
     const safePage = Math.max(0, Math.min(element, totalPages - 1));
@@ -83,14 +95,12 @@ const ListDetailPage = () => {
   };
 
   const PaginationPreviousHandler = () => {
-    paginationHandler(currentPage - 1)
-  }
+    paginationHandler(currentPage - 1);
+  };
 
   const PaginationNextHandler = () => {
-    paginationHandler(currentPage + 1)
-  }
-
-  
+    paginationHandler(currentPage + 1);
+  };
 
   return (
     <div>
@@ -101,7 +111,7 @@ const ListDetailPage = () => {
           </h2>
         </div>
         <div className="w-full mt-6 md:mt-0 md:w-6/12 flex flex-col md:flex-row items-center gap-4 md:gap-6">
-          <Select onValueChange={(value) => handleFilterChange("genre", value)}>
+          <Select onValueChange={(value) => handleFilterChange("genre", value)} value={filtered.genre}>
             <SelectTrigger className="w-[160px] md:w-[180px] hover:cursor-pointer bg-slate-800 text-slate-100 font-medium ease-in duration-150">
               <SelectValue className="" placeholder="Thể Loại" />
             </SelectTrigger>
@@ -246,6 +256,7 @@ const ListDetailPage = () => {
 
           <Select
             onValueChange={(value) => handleFilterChange("country", value)}
+            value={filtered.country}
           >
             <SelectTrigger className="w-[160px] text-sm md:w-[180px] hover:cursor-pointer bg-slate-800 text-slate-100 font-medium ease-in duration-150">
               <SelectValue className="" placeholder="Quốc Gia" />
@@ -326,6 +337,7 @@ const ListDetailPage = () => {
           <Select
             onValueChange={(value) => handleFilterChange("year", value)}
             placeholder
+            value={filtered.year}
           >
             <SelectTrigger className="w-[160px] text-sm md:w-[180px] hover:cursor-pointer bg-slate-800 text-slate-100 font-medium ease-in duration-150">
               <SelectValue className="" placeholder="Năm phát hành" />
@@ -415,7 +427,10 @@ const ListDetailPage = () => {
         <Pagination>
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious className="py-2 px-4 bg-orange-600 text-white font-medium rounded hover:cursor-pointer" onClick={PaginationPreviousHandler}/>
+              <PaginationPrevious
+                className="py-2 px-4 bg-orange-600 text-white font-medium rounded hover:cursor-pointer"
+                onClick={PaginationPreviousHandler}
+              />
             </PaginationItem>
             {listCurrentPage.map((element) => {
               return (
@@ -431,7 +446,10 @@ const ListDetailPage = () => {
               );
             })}
             <PaginationItem>
-              <PaginationNext className="py-2 px-4 bg-orange-600 text-white font-medium rounded hover:cursor-pointer" onClick={PaginationNextHandler}/>
+              <PaginationNext
+                className="py-2 px-4 bg-orange-600 text-white font-medium rounded hover:cursor-pointer"
+                onClick={PaginationNextHandler}
+              />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
